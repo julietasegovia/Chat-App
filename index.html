@@ -23,29 +23,54 @@
     </form>
     <script src="/socket.io/socket.io.js"></script>
     <script>
-        const socket = io();
+      let counter = 0;
 
-        const form = document.getElementById('form');
-        const input = document.getElementById('input');
-        const messages = document.getElementById('messages');
+      const socket = io({
+        ackTimeout: 10000,
+        retries: 3,
+        auth: { serverOffset: 0 }
+      });
 
-        form.addEventListener('submit', (e) => {
-            e.preventDefault();
-            if(input.value) {
-                socket.emit('chat message', input.value);
-                input.value = '';
-            }
-        });
+      const form = document.getElementById('form');
+      const input = document.getElementById('input');
+      const messages = document.getElementById('messages');
 
-        socket.on('chat message', (msg) => {
-        const item = document.createElement('li');        
-            item.textContent = msg;
-            messages.appendChild(item);
-            window.scrollTo(0, document.body.scrollHeight);
-        });
+      const nickname = prompt('Enter your name:');
+      socket.emit('set nickname', nickname);
 
+      form.addEventListener('submit', (e) => {
+        e.preventDefault();
+        if (input.value) {
+          const clientOffset = `${socket.id}-${counter++}`;
+
+          const item = document.createElement('li');
+          item.textContent = `${nickname}: ${input.value}`;
+          messages.appendChild(item);
+          window.scrollTo(0, document.body.scrollHeight);
+
+          socket.emit('chat message', input.value, clientOffset, (err, serverOffset) => {
+            if(!err && serverOffset)
+              socket.auth.serverOffset = serverOffset;
+          });
+
+          input.value = '';
+        }
+      });
+
+      socket.on('chat message', ({ text, sender }, serverOffset) => {
+        const item = document.createElement('li');
+        item.textContent = `${sender}: ${text}`;
+        messages.appendChild(item);
+        window.scrollTo(0, document.body.scrollHeight);
+        if (serverOffset) socket.auth.serverOffset = serverOffset;
+      });
+
+      socket.on('message', (text) => {
+        const li = document.createElement('li');
+        li.textContent = text;
+        li.style.color = 'gray';
+        messages.appendChild(li);
+      });
     </script>
   </body>
 </html>
-
-
