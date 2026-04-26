@@ -21,9 +21,7 @@ async function main() {
 
   const app = express();
   const server = createServer(app);
-  const io = new Server(server, {
-    connectionStateRecovery: {}
-  });
+  const io = new Server(server);
 
   app.get('/', (req, res) => {
     res.sendFile(join(__dirname, 'index.html'));
@@ -66,18 +64,6 @@ async function main() {
     socket.on('stop typing', () => {
         socket.broadcast.emit('stop typing', socket.nickname);
     });
-
-    if (!socket.recovered) {
-      try {
-        await db.each(
-          'SELECT id, content FROM messages WHERE id > ?',
-          [socket.handshake.auth.serverOffset || 0],
-          (_err, row) => {
-            socket.emit('chat message', { text: row.content, sender: '📜 history' }, row.id);
-          }
-        );
-      } catch (e) {}
-    }
   });
 
   server.listen(3000, () => {
