@@ -4,21 +4,6 @@ const { join } = require('node:path');
 const { Server } = require('socket.io');
 const sqlite3 = require('sqlite3');
 const { open } = require('sqlite');
-const { availableParallelism } = require('node:os');
-const cluster = require('node:cluster');
-const { createAdapter, setupPrimary } = require('@socket.io/cluster-adapter');
-const { send } = require('express/lib/response');
-
-if (cluster.isPrimary) {
-  const numCPUs = availableParallelism();
-  for (let i = 0; i < numCPUs; i++) {
-    cluster.fork({
-      PORT: 3000 + i
-    });
-  }
-
-  return setupPrimary();
-}
 
 async function main() {
   const db = await open({
@@ -46,50 +31,57 @@ async function main() {
 
   io.on('connection', async (socket) => {
 
-  socket.on('set nickname', (nickname) => {
-    socket.nickname = nickname;
-    socket.broadcast.emit('message', `${nickname} has joined the chat!`);
-    socket.emit('message', `hii, ${nickname}, you're now able to join the chat :]`);
-  });
-
-  socket.on('chat message', async (msg, clientOffset, callback) => {
-    let result;
-    try {
-      result = await db.run(
-        'INSERT INTO messages (content, client_offset) VALUES (?, ?)',
-        msg, clientOffset
-      );
-    } catch (e) {
-      if (e.errno === 19) callback();
-      return;
-    }
-
-    socket.broadcast.emit('chat message', { text: msg, sender: socket.nickname || 'Anonymous' }, result.lastID);
-    callback(null, result.lastID);
-  });
-
-  socket.on('disconnect', () => {
-    if (socket.nickname)
-      io.emit('message', `${socket.nickname} has left the chat.`);
-  });
-
-  if (!socket.recovered) {
-    try {
-      await db.each(
-        'SELECT id, content FROM messages WHERE id > ?',
-        [socket.handshake.auth.serverOffset || 0],
-        (_err, row) => {
-          socket.emit('chat message', { text: row.content, sender: 'history' }, row.id);
-        }
-        );
-    } catch (e) {}
-    }
+    socket.on('set nickname', (nickname) => {
+      if(socket.nickname)
+        return;
+      socket.nickname = nickname;
+      socket.broadcast.emit('message', `${nickname} has joined the chat :]`);
+      socket.emit('message', `hii ${nickname}, you're now able to join the chat :D`);
     });
 
-  const port = process.env.PORT;
+    socket.on('chat message', async (msg, clientOffset, callback) => {
+      let result;
+      try {
+        result = await db.run(
+          'INSERT INTO messages (content, client_offset) VALUES (?, ?)',
+          msg, clientOffset
+        );
+      } catch (e) {
+        if (e.errno === 19) callback();
+        return;
+      }
+      socket.broadcast.emit('chat message', { text: msg, sender: socket.nickname || 'Anonymous' }, result.lastID);
+      callback(null, result.lastID);
+    });
 
-  server.listen(port, () => {
-    console.log(`server running at http://localhost:${port}`);
+    socket.on('disconnect', () => {
+      if (socket.nickname)
+        io.emit('message', `${socket.nickname} has left the chat :[`);
+    });
+
+    socket.on('typing', () => {
+        socket.broadcast.emit('typing', socket.nickname);
+    });
+
+    socket.on('stop typing', () => {
+        socket.broadcast.emit('stop typing', socket.nickname);
+    });
+
+    if (!socket.recovered) {
+      try {
+        await db.each(
+          'SELECT id, content FROM messages WHERE id > ?',
+          [socket.handshake.auth.serverOffset || 0],
+          (_err, row) => {
+            socket.emit('chat message', { text: row.content, sender: '📜 history' }, row.id);
+          }
+        );
+      } catch (e) {}
+    }
+  });
+
+  server.listen(3000, () => {
+    console.log('server running at http://localhost:3000');
   });
 }
 
