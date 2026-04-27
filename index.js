@@ -57,6 +57,32 @@ async function main() {
       });
     });
 
+    socket.on('private message', ({to, text}) => {
+      if(!socket.nickname){
+        socket.emit('message', 'please enter a nickname first');
+        return;
+      }
+
+      const targetSocket = [...io.sockets.sockets.values()]
+        .find(s  => s.nickname === to);
+
+      if(!targetSocket){
+        socket.emit('message', `there's no "${to}" connected right now`);
+        return;
+      }
+
+      targetSocket.emit('private message', {
+        from: socket.nickname,
+        text: text
+      });
+
+      socket.emit('private message sent', {
+        to: to,
+        text: text
+      });
+
+    })
+
     socket.on('disconnect', () => {
       if (socket.nickname){
         io.emit('message', `${socket.nickname} has left the chat :[`);
@@ -70,11 +96,10 @@ async function main() {
   
   });
 
-  const port = process.env.PORT || 3000;
-  server.listen(port, '0.0.0.0', () => {
-    console.log(`server running at http://localhost:${port}`);
-  });
 
+server.listen(3000, () => {
+  console.log('server running at http://localhost:3000');
+});
 }
 
 main();
