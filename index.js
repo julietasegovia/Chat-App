@@ -1,3 +1,5 @@
+const port = process.env.PORT;
+
 const express = require('express');
 const { createServer } = require('node:http');
 const { join } = require('node:path');
@@ -91,8 +93,8 @@ async function main() {
   
   });
 
-  server.listen(3000, () => {
-    console.log('server running at http://localhost:3000');
+  server.listen(port, () => {
+    console.log(`server running at http://localhost:${port}`);
   });
 }
 

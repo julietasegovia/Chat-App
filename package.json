@@ -1,4 +1,7 @@
 {
+    "scripts": {
+        "start": "node index.js"
+    },
     "name": "chat-app",
     "version": "0.0.1",
     "description": "a simple chat app",
