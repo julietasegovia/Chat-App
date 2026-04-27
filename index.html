@@ -64,10 +64,7 @@
         if (input.value) {
           const clientOffset = `${socket.id}-${counter++}`;
 
-          const item = document.createElement('li');
-          item.textContent = `${nickname}: ${input.value}`;
-          messages.appendChild(item);
-          window.scrollTo(0, document.body.scrollHeight);
+          renderMessage(input.value, nickname);
 
           socket.emit('chat message', input.value, clientOffset, (err, serverOffset) => {
             if (!err && serverOffset) socket.auth.serverOffset = serverOffset;
@@ -76,6 +73,19 @@
           input.value = '';
         }
       });
+
+      function renderMessage(text, sender) {
+        const item = document.createElement('li');
+
+        const mentionsEveryone = /@everyone\b/.test(text);
+        const mentionsUser = new RegExp(`@${nickname}\\b`).test(text) || mentionsEveryone;
+        if (mentionsUser) item.style.background = '#fff3cd';
+
+        const highlighted = text.replace(/@(\w+)\b/g, '<strong>@$1</strong>');
+        item.innerHTML = `<span style = "font-weight: bold">${sender}</span>: ${highlighted}`;
+        messages.appendChild(item);
+        window.scrollTo(0, document.body.scrollHeight);
+      }
 
       function updateTypingIndicator() {
         if(typingUsers.size === 0)
@@ -98,15 +108,12 @@
 
       socket.on('online users', (users) => {
         topbar.innerHTML = users.map(user => `
-          <span class="online-user">${user}</span>
+          <span class="online-user">● ${user}</span>
         `).join('');
       })
 
       socket.on('chat message', ({ text, sender }, serverOffset) => {
-        const item = document.createElement('li');
-        item.textContent = `${sender}: ${text}`;
-        messages.appendChild(item);
-        window.scrollTo(0, document.body.scrollHeight);
+        renderMessage(text, sender);
       });
 
       socket.on('message', (text) => {

@@ -68,7 +68,7 @@ async function main() {
     socket.on('disconnect', () => {
       if (socket.nickname){
         io.emit('message', `${socket.nickname} has left the chat :[`);
-
+        io.emit('stop typing', socket.nickname);
         const onlineUsers = [...io.sockets.sockets.values()]
           .map(s => s.nickname)
           .filter(Boolean);
