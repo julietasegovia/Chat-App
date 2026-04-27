@@ -37,6 +37,14 @@ async function main() {
       socket.emit('message', `hii, ${nickname}, you're now able to chit chat :D`);
     });
 
+    socket.on('typing', () => {
+      socket.broadcast.emit('typing', socket.nickname);
+    });
+
+    socket.on('stop typing', () => {
+      socket.broadcast.emit('stop typing', socket.nickname);
+    });
+
     socket.on('chat message', async (msg, clientOffset, callback) => {
       let result;
       try {
@@ -56,18 +64,7 @@ async function main() {
       if (socket.nickname)
         io.emit('message', `${socket.nickname} has left the chat :[`);
     });
-
-    if (!socket.recovered) {
-      try {
-        await db.each(
-          'SELECT id, content FROM messages WHERE id > ?',
-          [socket.handshake.auth.serverOffset || 0],
-          (_err, row) => {
-            socket.emit('chat message', { text: row.content, sender: '📜 history' }, row.id);
-          }
-        );
-      } catch (e) {}
-    }
+    
   });
 
   server.listen(3000, () => {
