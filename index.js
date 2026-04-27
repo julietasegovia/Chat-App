@@ -2,22 +2,8 @@ const express = require('express');
 const { createServer } = require('node:http');
 const { join } = require('node:path');
 const { Server } = require('socket.io');
-const sqlite3 = require('sqlite3');
-const { open } = require('sqlite');
 
 async function main() {
-  const db = await open({
-    filename: 'chat.db',
-    driver: sqlite3.Database
-  });
-
-  await db.exec(`
-    CREATE TABLE IF NOT EXISTS messages (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      client_offset TEXT UNIQUE,
-      content TEXT
-    );
-  `);
 
   const app = express();
   const server = createServer(app);
@@ -25,7 +11,7 @@ async function main() {
     connectionStateRecovery: {}
   });
 
-  app.use(express.static(join(__driname)));
+  app.use(express.static(join(__dirname)));
   app.get('/', (req, res) => {
     res.sendFile(join(__dirname, 'index.html'));
   });
