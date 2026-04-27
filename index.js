@@ -30,11 +30,24 @@ async function main() {
   });
 
   io.on('connection', async (socket) => {
+    socket.nickname = null;
 
     socket.on('set nickname', (nickname) => {
+      if(!nickname || !nickname.trim()){
+        socket.emit('nickname error', `A nickname is needed to join the chatroom`);
+        return;
+      }
+
+      const taken = [...io.sockets.sockets.values()]
+        .some(s => s.nickname === nickname.trim());
+      if(taken){
+        socket.emit('nickname error', `Too late! "${nickname}" is already taken.`);
+        return;
+      }
+
       socket.nickname = nickname;
       socket.broadcast.emit('message', `${nickname} has joined the chat :]`);
-      socket.emit('message', `hii, ${nickname}, you're now able to chit chat :D`);
+      socket.emit('message', `hii ${nickname}, you're now able to chit chat :D`);
 
       const onlineUsers = [...io.sockets.sockets.values()]
         .map(s => s.nickname)

@@ -36,8 +36,7 @@
       const input = document.getElementById('input');
       const messages = document.getElementById('messages');
 
-      const nickname = prompt('Enter your name:');
-      socket.emit('set nickname', nickname);
+      let nickname;
 
       const typing = document.getElementById('typing-indicator');
       let typingTimeout;
@@ -74,28 +73,13 @@
         }
       });
 
-      function renderMessage(text, sender) {
-        const item = document.createElement('li');
+      askNickname();
 
-        const mentionsEveryone = /@everyone\b/.test(text);
-        const mentionsUser = new RegExp(`@${nickname}\\b`).test(text) || mentionsEveryone;
-        if (mentionsUser) item.style.background = '#fff3cd';
-
-        const highlighted = text.replace(/@(\w+)\b/g, '<strong>@$1</strong>');
-        item.innerHTML = `<span style = "font-weight: bold">${sender}</span>: ${highlighted}`;
-        messages.appendChild(item);
-        window.scrollTo(0, document.body.scrollHeight);
-      }
-
-      function updateTypingIndicator() {
-        if(typingUsers.size === 0)
-          typing.textContent = '';
-        else if(typingUsers.size === 1)
-          typing.textContent = `${[...typingUsers][0]} is typing...`;
-        else
-          typing.textContent = `${[...typingUsers].join(', ')} are typing...`;
-      }
-
+      socket.on('nickname error', (error) => {
+        alert(error);
+        askNickname();
+      })
+      
       socket.on('typing', (nickname) => {
         typingUsers.add(nickname);
         updateTypingIndicator();
@@ -122,6 +106,39 @@
         li.style.color = 'gray';
         messages.appendChild(li);
       });
+
+      function renderMessage(text, sender) {
+        const item = document.createElement('li');
+
+        const mentionsEveryone = /@everyone\b/.test(text);
+        const mentionsUser = new RegExp(`@${nickname}\\b`).test(text) || mentionsEveryone;
+        if (mentionsUser) item.style.background = '#fff3cd';
+
+        const highlighted = text.replace(/@(\w+)\b/g, '<strong>@$1</strong>');
+        item.innerHTML = `<span style = "font-weight: bold">${sender}</span>: ${highlighted}`;
+        messages.appendChild(item);
+        window.scrollTo(0, document.body.scrollHeight);
+      }
+
+      function updateTypingIndicator() {
+        if(typingUsers.size === 0)
+          typing.textContent = '';
+        else if(typingUsers.size === 1)
+          typing.textContent = `${[...typingUsers][0]} is typing...`;
+        else
+          typing.textContent = `${[...typingUsers].join(', ')} are typing...`;
+      }
+
+      function askNickname(){
+        const name = prompt('Enter your name:');
+        if(!name || !name.trim()){
+          alert('Nickname cannot be empty');
+          return askNickname();
+        }
+        nickname = name.trim();
+        socket.emit('set nickname', nickname);
+      }
+
     </script>
   </body>
 </html>
