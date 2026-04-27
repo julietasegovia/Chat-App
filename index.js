@@ -35,6 +35,11 @@ async function main() {
       socket.nickname = nickname;
       socket.broadcast.emit('message', `${nickname} has joined the chat :]`);
       socket.emit('message', `hii, ${nickname}, you're now able to chit chat :D`);
+
+      const onlineUsers = [...io.sockets.sockets.values()]
+        .map(s => s.nickname)
+        .filter(Boolean);
+      io.emit('online users', onlineUsers);
     });
 
     socket.on('typing', () => {
@@ -61,10 +66,16 @@ async function main() {
     });
 
     socket.on('disconnect', () => {
-      if (socket.nickname)
+      if (socket.nickname){
         io.emit('message', `${socket.nickname} has left the chat :[`);
+
+        const onlineUsers = [...io.sockets.sockets.values()]
+          .map(s => s.nickname)
+          .filter(Boolean);
+        io.emit('online users', onlineUsers);
+      }
     });
-    
+  
   });
 
   server.listen(3000, () => {
