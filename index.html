@@ -64,21 +64,17 @@
 
       form.addEventListener('submit', (e) => {
         e.preventDefault();
-
-        clearTimeout(typingTimeout);
-        isTyping = false;
-        socket.emit('stop typing');
-        
         if (input.value) {
-          const id = socket.id || Math.random().toString(36).slice(2);
           const clientOffset = `${socket.id}-${counter++}`;
-
+          
           const item = document.createElement('li');
           item.textContent = `${nickname}: ${input.value}`;
           messages.appendChild(item);
           window.scrollTo(0, document.body.scrollHeight);
 
-          socket.emit('chat message', input.value, clientOffset);
+          socket.emit('chat message', input.value, clientOffset, (err, serverOffset) => {
+            if (!err && serverOffset) socket.auth.serverOffset = serverOffset;
+          });
 
           input.value = '';
         }

@@ -21,7 +21,9 @@ async function main() {
 
   const app = express();
   const server = createServer(app);
-  const io = new Server(server);
+  const io = new Server(server, {
+    connectionStateRecovery: {}
+  });
 
   app.get('/', (req, res) => {
     res.sendFile(join(__dirname, 'index.html'));
@@ -30,11 +32,9 @@ async function main() {
   io.on('connection', async (socket) => {
 
     socket.on('set nickname', (nickname) => {
-      if(socket.nickname)
-        return;
       socket.nickname = nickname;
       socket.broadcast.emit('message', `${nickname} has joined the chat :]`);
-      socket.emit('message', `hii ${nickname}, you're now able to join the chat :D`);
+      socket.emit('message', `hii, ${nickname}, you're now able to chit chat :D`);
     });
 
     socket.on('chat message', async (msg, clientOffset, callback) => {
@@ -57,13 +57,17 @@ async function main() {
         io.emit('message', `${socket.nickname} has left the chat :[`);
     });
 
-    socket.on('typing', () => {
-        socket.broadcast.emit('typing', socket.nickname);
-    });
-
-    socket.on('stop typing', () => {
-        socket.broadcast.emit('stop typing', socket.nickname);
-    });
+    if (!socket.recovered) {
+      try {
+        await db.each(
+          'SELECT id, content FROM messages WHERE id > ?',
+          [socket.handshake.auth.serverOffset || 0],
+          (_err, row) => {
+            socket.emit('chat message', { text: row.content, sender: '📜 history' }, row.id);
+          }
+        );
+      } catch (e) {}
+    }
   });
 
   server.listen(3000, () => {
