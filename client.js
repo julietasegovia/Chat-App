@@ -124,7 +124,7 @@ function renderMessage(text, sender, isPrivate = false) {
     item.style.margin = '0.25rem 0';
   }
 
-  const privateBadge = isPrivate ? '<span style="background: #9c27b0; color: white; padding: 0.1rem 0.4rem; border-radius: 0.3rem; font-size: 0.7rem; margin-right: 0.5rem;">whisper</span>' : '';
+  const privateBadge = isPrivate ? '<span style="background: #9c27b0; color: white; padding: 0.1rem 0.4rem; border-radius: 0.3rem; font-size: 0.7rem; margin-right: 0.5rem;">WHISPER</span>' : '';
   const highlighted = escapeHTML(text).replace(/@(\w+)\b/g, '<strong>@$1</strong>');
   
   item.innerHTML = `${privateBadge}<span style="font-weight: bold">${sender}</span>: ${highlighted}`;
