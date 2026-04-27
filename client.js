@@ -35,9 +35,7 @@
 
           renderMessage(input.value, nickname);
 
-          socket.emit('chat message', input.value, clientOffset, (err, serverOffset) => {
-            if (!err && serverOffset) socket.auth.serverOffset = serverOffset;
-          });
+          socket.emit('chat message', input.value);
 
           input.value = '';
         }

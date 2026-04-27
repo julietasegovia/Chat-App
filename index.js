@@ -25,6 +25,7 @@ async function main() {
     connectionStateRecovery: {}
   });
 
+  app.use(express.static(join(__driname)));
   app.get('/', (req, res) => {
     res.sendFile(join(__dirname, 'index.html'));
   });
@@ -63,19 +64,11 @@ async function main() {
       socket.broadcast.emit('stop typing', socket.nickname);
     });
 
-    socket.on('chat message', async (msg, clientOffset, callback) => {
-      let result;
-      try {
-        result = await db.run(
-          'INSERT INTO messages (content, client_offset) VALUES (?, ?)',
-          msg, clientOffset
-        );
-      } catch (e) {
-        if (e.errno === 19) callback();
-        return;
-      }
-      socket.broadcast.emit('chat message', { text: msg, sender: socket.nickname || 'Anonymous' }, result.lastID);
-      callback(null, result.lastID);
+    socket.on('chat message', (msg) => {
+      socket.broadcast.emit('chat message', {
+        text: msg,
+        sender: socket.nickname || 'Anonymous'
+      });
     });
 
     socket.on('disconnect', () => {
