@@ -13,7 +13,6 @@ const typingUsers = new Set();
 
 const topbar = document.getElementById('topbar');
 
-// Helper function to escape HTML
 function escapeHTML(text) {
   const div = document.createElement('div');
   div.textContent = text;
@@ -43,8 +42,7 @@ form.addEventListener('submit', (e) => {
   }
 });
 
-// Function to make online users clickable
-function setupOnlineUsersClick() {
+function whisperTo() {
   const userSpans = document.querySelectorAll('.online-user');
   userSpans.forEach(span => {
     span.style.cursor = 'pointer';
@@ -81,23 +79,21 @@ socket.on('online users', (users) => {
   topbar.innerHTML = users.map(user => `
     <span class="online-user">● ${escapeHTML(user)}</span>
   `).join('');
-  setupOnlineUsersClick();
+  whisperTo();
 })
 
 socket.on('chat message', ({ text, sender }, serverOffset) => {
   renderMessage(text, sender, false);
 });
 
-// Handle incoming private messages (received from others)
 socket.on('private message', ({ from, text }) => {
   renderMessage(text, from, true);
 });
 
-// Handle confirmation that your private message was sent
 socket.on('private message sent', ({ to, text }) => {
   const li = document.createElement('li');
-  li.textContent = `✓ Private message sent to ${to}: ${text}`;
-  li.style.color = '#4caf50';
+  li.textContent = `✓ Whisper sent to ${to}: ${text}`;
+  li.style.color = '#694a70';
   li.style.fontStyle = 'italic';
   li.style.fontSize = '0.85rem';
   li.style.padding = '0.25rem 1rem';
@@ -122,7 +118,6 @@ function renderMessage(text, sender, isPrivate = false) {
   const mentionsUser = new RegExp(`@${nickname}\\b`).test(text) || mentionsEveryone;
   if (mentionsUser) item.style.background = '#fff3cd';
 
-  // Style private messages differently
   if (isPrivate) {
     item.style.background = '#f3e5f5';
     item.style.padding = '0.5rem 1rem';
@@ -130,10 +125,9 @@ function renderMessage(text, sender, isPrivate = false) {
   }
 
   const privateBadge = isPrivate ? '<span style="background: #9c27b0; color: white; padding: 0.1rem 0.4rem; border-radius: 0.3rem; font-size: 0.7rem; margin-right: 0.5rem;">whisper</span>' : '';
-  const displaySender = isPrivate ? `${escapeHTML(sender)}` : escapeHTML(sender);
   const highlighted = escapeHTML(text).replace(/@(\w+)\b/g, '<strong>@$1</strong>');
   
-  item.innerHTML = `${privateBadge}<span style="font-weight: bold">${displaySender}</span>: ${highlighted}`;
+  item.innerHTML = `${privateBadge}<span style="font-weight: bold">${sender}</span>: ${highlighted}`;
   messages.appendChild(item);
   window.scrollTo(0, document.body.scrollHeight);
 }
