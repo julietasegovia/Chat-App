@@ -3,21 +3,7 @@
   <head>
     <meta name="viewport" content="width=device-width,initial-scale=1.0">
     <title>Socket.IO chat</title>
-    <style>
-      body { margin: 0; padding-bottom: 6rem; padding-top: 3rem; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
-
-      .online-user{ background: rgba(255, 255, 255, 0.15); border-radius: 1rem; padding: 0.2rem 0.65rem; }
-      #typing-indicator { position: fixed; bottom: 3rem; left: 0; padding: 0.25rem 1rem; font-size: 0.85rem; color: gray; background-color: #ffffff5e; font-style: italic; min-height: 1.5rem; }
-      #topbar { position: fixed; top: 0; left: 0; right: 0; height: 3rem; background: #333; color: #fff; display: flex; align-items: center; gap: 0.5rem; padding: 0 1rem; font-size: 0.85rem; overflow-x: auto; white-space: nowrap; box-sizing: border-box; }
-      #form { background: rgba(0, 0, 0, 0.15); padding: 0.25rem; position: fixed; bottom: 0; left: 0; right: 0; display: flex; height: 3rem; box-sizing: border-box; backdrop-filter: blur(10px); }
-      #input { border: none; padding: 0 1rem; flex-grow: 1; border-radius: 2rem; margin: 0.25rem; }
-      #input:focus { outline: none; }
-      #form > button { background: #333; border: none; padding: 0 1rem; margin: 0.25rem; border-radius: 3px; outline: none; color: #fff; }
-
-      #messages { list-style-type: none; margin: 0; padding: 0; }
-      #messages > li { padding: 0.5rem 1rem; }
-      #messages > li:nth-child(odd) { background: #efefef; }
-    </style>
+    <style href="stylesheeet.css"></style>
   </head>
   <body>
     <div id="topbar"></div>
@@ -27,118 +13,6 @@
       <input id="input" autocomplete="off" /><button>Send</button>
     </form>
     <script src="/socket.io/socket.io.js"></script>
-    <script>
-      let counter = 0;
-
-      const socket = io();
-
-      const form = document.getElementById('form');
-      const input = document.getElementById('input');
-      const messages = document.getElementById('messages');
-
-      let nickname;
-
-      const typing = document.getElementById('typing-indicator');
-      let typingTimeout;
-      let isTyping = false;
-      const typingUsers = new Set();
-
-      const topbar = document.getElementById('topbar');
-
-      input.addEventListener('input', () => {
-        if(!isTyping) {
-          isTyping = true;
-          socket.emit('typing');
-        }
-
-        clearTimeout(typingTimeout);
-        typingTimeout = setTimeout(() => {
-          isTyping = false;
-          socket.emit('stop typing');
-        }, 1500);
-      });
-
-      form.addEventListener('submit', (e) => {
-        e.preventDefault();
-        if (input.value) {
-          const clientOffset = `${socket.id}-${counter++}`;
-
-          renderMessage(input.value, nickname);
-
-          socket.emit('chat message', input.value, clientOffset, (err, serverOffset) => {
-            if (!err && serverOffset) socket.auth.serverOffset = serverOffset;
-          });
-
-          input.value = '';
-        }
-      });
-
-      askNickname();
-
-      socket.on('nickname error', (error) => {
-        alert(error);
-        askNickname();
-      })
-      
-      socket.on('typing', (nickname) => {
-        typingUsers.add(nickname);
-        updateTypingIndicator();
-      });
-
-      socket.on('stop typing', (nickname) => {
-        typingUsers.delete(nickname);
-        updateTypingIndicator();
-      });
-
-      socket.on('online users', (users) => {
-        topbar.innerHTML = users.map(user => `
-          <span class="online-user">● ${user}</span>
-        `).join('');
-      })
-
-      socket.on('chat message', ({ text, sender }, serverOffset) => {
-        renderMessage(text, sender);
-      });
-
-      socket.on('message', (text) => {
-        const li = document.createElement('li');
-        li.textContent = text;
-        li.style.color = 'gray';
-        messages.appendChild(li);
-      });
-
-      function renderMessage(text, sender) {
-        const item = document.createElement('li');
-
-        const mentionsEveryone = /@everyone\b/.test(text);
-        const mentionsUser = new RegExp(`@${nickname}\\b`).test(text) || mentionsEveryone;
-        if (mentionsUser) item.style.background = '#fff3cd';
-
-        const highlighted = text.replace(/@(\w+)\b/g, '<strong>@$1</strong>');
-        item.innerHTML = `<span style = "font-weight: bold">${sender}</span>: ${highlighted}`;
-        messages.appendChild(item);
-        window.scrollTo(0, document.body.scrollHeight);
-      }
-
-      function updateTypingIndicator() {
-        if(typingUsers.size === 0)
-          typing.textContent = '';
-        else if(typingUsers.size === 1)
-          typing.textContent = `${[...typingUsers][0]} is typing...`;
-        else
-          typing.textContent = `${[...typingUsers].join(', ')} are typing...`;
-      }
-
-      function askNickname(){
-        const name = prompt('Enter your name:');
-        if(!name || !name.trim()){
-          alert('Nickname cannot be empty');
-          return askNickname();
-        }
-        nickname = name.trim();
-        socket.emit('set nickname', nickname);
-      }
-
-    </script>
+    <script src="client.js"></script>
   </body>
 </html>
